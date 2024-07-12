@@ -38,6 +38,6 @@ const ptBR = {
   ],
   dayNamesShort: ["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SÁB"],
   today: "Hoje",
-}
+};
 
-export { ptBR }
+export { ptBR };
