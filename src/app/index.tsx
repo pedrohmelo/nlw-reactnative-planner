@@ -7,17 +7,22 @@ import {
   ArrowRight,
   AtSign,
 } from "lucide-react-native";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { router } from "expo-router";
 import { DateData } from "react-native-calendars";
 import { View, Text, Image, Keyboard, Alert } from "react-native";
+
 import { colors } from "@/styles/colors";
 import { Input } from "@/components/input";
 import { Modal } from "@/components/modal";
+import { tripStorage } from "@/storage/trip";
 import { Button } from "@/components/button";
-import { Calendar } from "@/components/calendar";
-import { calendarUtils, DatesSelected } from "@/utils/calendarUtils";
 import { GuestEmail } from "@/components/email";
+import { Calendar } from "@/components/calendar";
+import { tripServer } from "@/server/trip-server";
 import { validateInput } from "@/utils/validateInput";
+import { calendarUtils, DatesSelected } from "@/utils/calendarUtils";
+import { Loading } from "@/components/loading";
 
 enum StepForm {
   TRIP_DETAILS = 1,
@@ -31,6 +36,10 @@ enum MODAL {
 }
 
 export default function Index() {
+  //LOADING
+  const [isCreatingTrip, setIsCreatingTrip] = useState(false);
+  const [isGettingTrip, setIsGettingTrip] = useState(true);
+
   // DATA
   const [stepForm, setStepForm] = useState(StepForm.TRIP_DETAILS);
   const [selectedDates, setSelectedDates] = useState({} as DatesSelected);
@@ -63,6 +72,17 @@ export default function Index() {
     if (stepForm === StepForm.TRIP_DETAILS) {
       return setStepForm(StepForm.ADD_EMAIL);
     }
+
+    Alert.alert("Nova viagem", "Confirmar viagem?", [
+      {
+        text: "Não",
+        style: "cancel",
+      },
+      {
+        text: "Sim",
+        onPress: createTrip,
+      },
+    ]);
   }
 
   function handleSelectDate(selectedDay: DateData) {
@@ -96,6 +116,68 @@ export default function Index() {
 
     setEmailsToInvite((prevState) => [...prevState, emailToInvite]);
     setEmailToInvite("");
+  }
+
+  async function saveTrip(tripId: string) {
+    try {
+      await tripStorage.save(tripId);
+      router.navigate("/trip/" + tripId);
+    } catch (error) {
+      Alert.alert(
+        "Salvar viagem",
+        "Não foi possível salvar o id da viagem no dispositivo."
+      );
+      console.log(error);
+    }
+  }
+
+  async function createTrip() {
+    try {
+      setIsCreatingTrip(true);
+
+      const newTrip = await tripServer.create({
+        destination,
+        starts_at: dayjs(selectedDates.startsAt?.dateString).toString(),
+        ends_at: dayjs(selectedDates.endsAt?.dateString).toString(),
+        emails_to_invite: emailsToInvite,
+      });
+
+      Alert.alert("Nova viagem", "Viagem criada com sucesso!", [
+        {
+          text: "Ok. Continuar.",
+          onPress: () => saveTrip(newTrip.tripId),
+        },
+      ]);
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async function getTrip() {
+    try {
+      const tripID = await tripStorage.get();
+
+      if (!tripID) {
+        return setIsGettingTrip(false);
+      }
+
+      const trip = await tripServer.getById(tripID);
+
+      if (trip) {
+        return router.navigate("/trip/" + trip.id);
+      }
+    } catch (error) {
+      setIsGettingTrip(false);
+      console.log(error);
+    }
+  }
+
+  useEffect(() => {
+    getTrip();
+  }, []);
+
+  if (isGettingTrip) {
+    return <Loading />;
   }
 
   return (
@@ -155,7 +237,7 @@ export default function Index() {
                 placeholder="Quem estará na viagem?"
                 autoCorrect={false}
                 value={
-                  emailToInvite.length > 0
+                  emailsToInvite.length > 0
                     ? `${emailsToInvite.length} pessoas(a) convidada(s)`
                     : ""
                 }
@@ -169,7 +251,7 @@ export default function Index() {
           </>
         )}
 
-        <Button onPress={handleNextStepForm}>
+        <Button onPress={handleNextStepForm} isLoading={isCreatingTrip}>
           <Button.Title>
             {stepForm === StepForm.TRIP_DETAILS
               ? "Continuar"
