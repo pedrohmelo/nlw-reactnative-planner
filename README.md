@@ -26,6 +26,8 @@ Você pode encontrar o repositório do servidor desta aplicação aqui:
 
 - https://github.com/pedrohmelo/nlw-node-plannerServer
 
+Não se esqueça de adicionar o arquivo .env na raiz da aplicação, o arquivo .env deverá ser igual ao arquivo .env.example. Caso contrário, seu servidor não irá iniciar.
+
 Com o servidor em mãos, execute-o através do cmd:
 
 - npm run dev
