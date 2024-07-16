@@ -11,7 +11,9 @@
 
 - Visualização, criação, edição e remoção de viagens
 - Visualização, criação, edição e remoção de atividades
+- Visualização, criação e remoção de links importantes vinculados a viagem
 - Vinculação de usuários (convidados) às viagens
+- Confirmar usuários vinculados a viagem
 
 ### Inicializando a aplicação
 
